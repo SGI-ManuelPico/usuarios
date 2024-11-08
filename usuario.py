@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date, BigInteger, Text, LargeBinary
 from sqlalchemy.ext.declarative import declarative_base
 
-# Inicializar la base para los modelos de SQLAlchemy
+
 Base = declarative_base()
 
 
