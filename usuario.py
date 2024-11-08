@@ -1,6 +1,5 @@
-from sqlalchemy import Column, Integer, String, Date, BigInteger, Text, LargeBinary
+from sqlalchemy import Column, Integer, String, Date, LargeBinary
 from sqlalchemy.ext.declarative import declarative_base
-
 
 Base = declarative_base()
 

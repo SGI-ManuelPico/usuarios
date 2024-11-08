@@ -1,11 +1,11 @@
 import pandas as pd
 from db import get_session
-from usuario import Usuario
+from usuario import Base, Usuario
 from difflib import get_close_matches
 import re
 import bcrypt
 
-# Cargar datos
+# Función para cargar datos
 def cargarDatos():
     codigosSubcentros = r'files\SubcentrosF.xlsx'
     refDf = pd.read_excel(codigosSubcentros)
@@ -19,11 +19,11 @@ def cargarDatos():
     
     return refDf, df
 
-# Crear diccionario para búsqueda rápida de subcentros
+# Función para crear diccionario de subcentros
 def crearDiccionarioSubcentro(refDf):
     return {k: v.upper() for k, v in zip(refDf['Subcentro de Costo'], refDf['Código'])}
 
-# Función para encontrar la coincidencia más cercana usando difflib
+# Función para encontrar la coincidencia más cercana para el código del subcentro
 def mejorCoincidencia(nombreSubcentro, diccionarioSubcentro, umbral=0.8):
     if nombreSubcentro in diccionarioSubcentro:
         return diccionarioSubcentro[nombreSubcentro]
@@ -39,17 +39,16 @@ def obtenerCodigoSubcentro(centroCosto, diccionarioSubcentro):
         if re.match(r'^[EAIOLeaio][0-9]+', codigo):
             return codigo
     elif 'perenco' in centroCosto:
-        return 'L21510201'  # Código asignado directamente para "Perenco"
+        return 'L21510201'  
     elif 'transversal' in centroCosto:
-        return 'E2100'  # Código asignado directamente para "Transversal"
+        return 'E2100'  
     elif 'labotatorio frontera-c2217' in centroCosto:
-        return 'L241223'  # Caso especial para "LABOTATORIO FRONTERA-C2217"
+        return 'L241223' 
     elif 'frontera quifa y cajua cto c-856' in centroCosto:
-        return mejorCoincidencia('frontera quifa y cajua cto c-856', diccionarioSubcentro)  # Coincidencia especial
+        return mejorCoincidencia('frontera quifa y cajua cto c-856', diccionarioSubcentro)
     else:
         return mejorCoincidencia(centroCosto, diccionarioSubcentro)
 
-# Función para determinar `idProyecto` basado en `codigoSubcentroCostos`
 def obtenerIdProyecto(codigoSubcentro):
     if codigoSubcentro is None:
         return None 
