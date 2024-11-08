@@ -1,100 +1,72 @@
 import pandas as pd
 import re
 from difflib import SequenceMatcher
+from db import get_session
+from usuario import Usuario
 
 # Función para normalizar nombres
-def normalizarNombre(name):
-    name = name.lower()
-    name = re.sub(r'\s+', ' ', name)
-    name = re.sub(r'[^a-z\s]', '', name)
-    return name.strip()
+def normalizarNombre(nombre):
+    nombre = nombre.lower()
+    nombre = re.sub(r'\s+', ' ', nombre)
+    nombre = re.sub(r'[^a-z\s]', '', nombre)
+    return nombre.strip()
 
 # Función para calcular la similitud entre dos nombres
-def similar(a, b):
-    return SequenceMatcher(None, normalizarNombre(a), normalizarNombre(b)).ratio()
+def similitudNombres(nombreA, nombreB):
+    return SequenceMatcher(None, normalizarNombre(nombreA), normalizarNombre(nombreB)).ratio()
 
-# Función para encontrar coincidencias entre dos dataframes (esta es más para debuggear)
-def find_matches(df1, df2, threshold):
-    matches = []
-    for i, row1 in df1.iterrows():
-        name1 = str(row1['Nombre'])
-        for j, row2 in df2.iterrows():
-            name2 = str(row2['Nombre'])
-            try:
-                similarity = similar(name1, name2)
-                if similarity >= threshold:
-                    matches.append((name1, name2, similarity))
-            except Exception as e:
-                print(f"Error comparando {name1} y {name2}: {e}")
-    return pd.DataFrame(matches, columns=['Nombre_df1', 'Nombre_df2', 'Similitud']), matches
-
-# Función para encontrar las mejores coincidencias de correos electrónicos basados en la similitud de nombres
-def matchesCorreo(df1, df2, threshold=0.8):
-    matches = []
-    for i, row1 in df1.iterrows():
-        name1 = str(row1['Nombre'])
-        mejorMatch = ""
-        mejorSimilitud = 0
-        for j, row2 in df2.iterrows():
-            name2 = str(row2['Nombre'])
-            try:
-                similarity = similar(name1, name2)
-                if similarity > mejorSimilitud and similarity >= threshold:
-                    mejorMatch = row2['CorreoCorp']
-                    mejorSimilitud = similarity
-            except Exception as e:
-                print(f"Error comparando {name1} y {name2}: {e}")
-        matches.append(mejorMatch if mejorMatch else "")
-    return matches
-
-# Función principal
-def main():
-    # Cargar datos (cambiar por la más reciente)
-    rutaUsuarios = 'Usuarios_Completos1.csv'
+# Función para encontrar y asignar correos corporativos a usuarios en la base de datos
+def actualizarCorreosCorporativos(rutaCorreos, umbral=0.8):
+    # Cargar datos externos para comparación
+    dfCorreos = pd.read_excel(rutaCorreos)[['Nombre para mostrar', 'Nombre principal de usuario']]
+    dfCorreos.rename(columns={'Nombre para mostrar': 'nombre', 'Nombre principal de usuario': 'correoCorp'}, inplace=True)
     
-    usuario_comp = pd.read_csv(rutaUsuarios)
+    # Iniciar sesión con la base de datos
+    session = get_session()
+    
+    # Obtener todos los usuarios de la tabla `usuario`
+    usuariosBD = session.query(Usuario).all()
+    
+    # Lista para almacenar coincidencias para verificación
+    coincidencias = []
 
-    # Modificar estructura del dataframe
-    usuario_comp.insert(usuario_comp.columns.get_loc('Correo') + 1, 'CorreoSgi', '')
-    usuario_comp.rename(columns={'Correo': 'correoPersonal'}, inplace=True)
-   
+    # Recorrer cada usuario en la base de datos
+    for usuario in usuariosBD:
+        mejorCorreo = None
+        mejorSimilitud = 0
 
-    df1 = usuario_comp
+        # Comparar el nombre del usuario con cada nombre en el archivo de correos
+        for _, row in dfCorreos.iterrows():
+            nombreCorreo = row['nombre']
+            correoCorporativo = row['correoCorp']
+            
+            # Calcular la similitud
+            similitud = similitudNombres(usuario.nombre, nombreCorreo)
+            
+            # Asignar el mejor correo basado en el umbral de similitud
+            if similitud > mejorSimilitud and similitud >= umbral:
+                mejorCorreo = correoCorporativo
+                mejorSimilitud = similitud
 
-    # Cargar datos externos para comparación (cambiar por la más reciente)
-    rutaCorreos = r"C:\Users\Soporte\Downloads\Libro3.xlsx"
+        # Si se encontró una coincidencia, actualizar el campo de correo en la base de datos
+        if mejorCorreo:
+            usuario.correo = mejorCorreo
+            coincidencias.append((usuario.nombre, mejorCorreo, mejorSimilitud))
+            print(f"Actualizado correo de {usuario.nombre} a {mejorCorreo} (Similitud: {mejorSimilitud:.2f})")
 
-    df2 = pd.read_excel(rutaCorreos)[['Nombre para mostrar', 'Nombre principal de usuario']]
-    df2.rename(columns={'Nombre principal de usuario': 'CorreoCorp', 'Nombre para mostrar':'Nombre'}, inplace=True)
+    # Confirmar los cambios en la base de datos
+    session.commit()
+    session.close()
 
-    # Encontrar coincidencias con un umbral de similitud del 80%
-    # matches_df, matches = find_matches(df1, df2, threshold=0.8)
-    matches_correo = matchesCorreo(df1, df2, threshold=0.8)
+    # Mostrar las coincidencias encontradas
+    print("\nCoincidencias encontradas:")
+    for nombre, correo, similitud in coincidencias:
+        print(f"Nombre: {nombre}, Correo Corporativo: {correo}, Similitud: {similitud:.2f}")
 
-    # Actualizar df1 con correos electrónicos corporativos coincidentes
-    df1['CorreoCorp'] = matches_correo
-
-    # Reemplazar correos electrónicos corporativos vacíos con correos electrónicos personales
-    df1['CorreoCorp'] = df1.apply(
-        lambda row: row['correoPersonal'] if pd.isna(row['CorreoCorp']) or row['CorreoCorp'] == "" else row['CorreoCorp'],
-        axis=1
-    )
-
-    # Obtener la posición de la columna 'CorreoSgi' y eliminarla
-    col_position = df1.columns.get_loc('CorreoSgi')
-    df1 = df1.drop(columns=['CorreoSgi'])
-
-    # Insertar 'CorreoCorp' en la posición original de 'CorreoSgi'
-    df1.insert(col_position, 'CorreoCorp', df1.pop('CorreoCorp'))
-
-    # Renombrar 'CorreoCorp' a 'correoSGI'
-    df1 = df1.rename(columns={'CorreoCorp': 'correoSGI'})
-
-    df_S = df1[['Nombre', 'Cargo', 'correoSGI']]
-
-    df_S.to_excel('usuarios.xlsx', index=False)
-
-    print(df1['correoSGI'])
-
+# Ejecución principal
 if __name__ == "__main__":
-    main()
+    # Ruta al archivo de correos corporativos
+    rutaCorreos = r'files\CorreosSGI.xlsx'  
+
+    # Actualizar correos corporativos en la base de datos
+    actualizarCorreosCorporativos(rutaCorreos)

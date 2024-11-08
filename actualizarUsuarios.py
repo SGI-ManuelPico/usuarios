@@ -41,7 +41,7 @@ def obtenerCodigoSubcentro(centroCosto, diccionarioSubcentro):
     elif 'perenco' in centroCosto:
         return 'L21510201'  # Código asignado directamente para "Perenco"
     elif 'transversal' in centroCosto:
-        return 'A000'  # Código ficticio para 'transversal'
+        return 'E2100'  # Código asignado directamente para "Transversal"
     elif 'labotatorio frontera-c2217' in centroCosto:
         return 'L241223'  # Caso especial para "LABOTATORIO FRONTERA-C2217"
     elif 'frontera quifa y cajua cto c-856' in centroCosto:
