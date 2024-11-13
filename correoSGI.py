@@ -1,7 +1,7 @@
 import pandas as pd
 import re
 from difflib import SequenceMatcher
-from db import get_session
+from db import get_session_db1
 from usuario import Usuario
 
 # Función para normalizar nombres
@@ -22,7 +22,7 @@ def actualizarCorreosCorporativos(rutaCorreos, umbral=0.8):
     dfCorreos.rename(columns={'Nombre para mostrar': 'nombre', 'Nombre principal de usuario': 'correoCorp'}, inplace=True)
     
     # Iniciar sesión con la base de datos
-    session = get_session()
+    session = get_session_db1()
     
     # Obtener todos los usuarios de la tabla `usuario`
     usuariosBD = session.query(Usuario).all()

@@ -1,5 +1,5 @@
 import pandas as pd
-from db import get_session
+from db import get_session_db1
 from usuario import Base, Usuario
 from difflib import get_close_matches
 import re
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     diccionarioSubcentro = crearDiccionarioSubcentro(refDf)
     
     # Iniciar sesión y obtener IDs de usuarios existentes
-    session = get_session()
+    session = get_session_db1()
     idsExistentes = {usuario.cedula for usuario in session.query(Usuario.cedula).all()}
     session.close()
     
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     nuevosUsuariosAct = prepararNuevosUsuarios(df, idsExistentes, diccionarioSubcentro)
     
     # Agregar nuevos usuarios a la base de datos y verificar los insertados
-    session = get_session()
+    session = get_session_db1()
     usuariosInsertados = agregarNuevosUsuarios(session, nuevosUsuariosAct)
     
     # Asignar contraseñas a usuarios sin contraseña
