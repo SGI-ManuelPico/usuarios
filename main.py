@@ -12,11 +12,10 @@ logging.basicConfig(
 logging.info("Inicio del proceso de sincronización...")
 
 try:
-    # Llama a la función de sincronización
     sincronizarTodo()
     logging.info("Sincronización completada con éxito.")
 except Exception as e:
-    logging.error(f"Error durante la sincronización: {e}")
+    logging.error(f"Error durante la sincronización: {e}", exc_info=True)
 
 # Mensaje final
 logging.info("Fin del proceso.")
