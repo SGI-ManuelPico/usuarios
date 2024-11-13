@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 HOST = 'localhost'
 USER = 'root'
 PASSWORD = '12345678'
-DATABASE = 'test2'
+DATABASE = 'test'
 
 DATABASE_URL = f"mysql+pymysql://{USER}:{PASSWORD}@{HOST}/{DATABASE}"
 engine = create_engine(DATABASE_URL)
