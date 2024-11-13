@@ -6,21 +6,21 @@ db1 = ConexionDB(
     host="srv1182.hstgr.io",
     user="u438914854_prueba",
     password="!Tn3X(_mp@Kio[h",
-    database="u438914854_prueba"  # Cambia por el nombre de tu base origen
+    database="u438914854_prueba"  
 )
 
 db2 = ConexionDB(
     host="srv1182.hstgr.io",
     user="u438914854_dsoftwaresgi",
     password="C'M9UTwDBMkowe+A#",
-    database="u438914854_baseDatosSGI"  # Cambia por el nombre de tu base destino
+    database="u438914854_baseDatosSGI"  
 )
 
 def sincronizar_tablas():
     """
     Sincroniza los datos de la tabla `usuario` entre dos bases de datos.
     """
-    # Conectar a las dos bases de datos
+
     conn1 = db1.establecerConexion()
     conn2 = db2.establecerConexion()
 
@@ -29,12 +29,12 @@ def sincronizar_tablas():
             cursor1 = conn1.cursor(dictionary=True)
             cursor2 = conn2.cursor()
 
-            # Obtener todos los registros de la tabla `usuario` de la base origen
+            # Obtener todos los registros de la tabla `usuario` de la base desarrolloSGI
             cursor1.execute("SELECT * FROM usuario")
             usuarios_origen = cursor1.fetchall()
 
             for usuario in usuarios_origen:
-                # Verificar si el registro ya existe en la base destino
+                # Verificar si el registro ya existe en la base prueba
                 cursor2.execute(
                     "SELECT * FROM usuario WHERE cedula = %s",
                     (usuario['cedula'],)
@@ -96,13 +96,11 @@ def sincronizar_tablas():
                         )
                     )
 
-            # Confirmar los cambios en la base destino
             conn2.commit()
 
         except Error as e:
             print(f"Error durante la sincronización: {e}")
         finally:
-            # Cerrar los cursores y las conexiones
             cursor1.close()
             cursor2.close()
             db1.cerrarConexion()
