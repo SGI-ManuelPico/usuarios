@@ -118,13 +118,13 @@ def sincronizarTodo():
     ]
 
     db_config = {
-        "origen": {
+        "destino": {
             "host": "srv1182.hstgr.io",
             "user": "u438914854_prueba",
             "password": "!Tn3X(_mp@Kio[h",
             "database": "u438914854_prueba"
         },
-        "destino": {
+        "origen": {
             "host": "srv1182.hstgr.io",
             "user": "u438914854_dsoftwaresgi",
             "password": "C'M9UTwDBMkowe+A#",
