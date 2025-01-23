@@ -81,9 +81,9 @@ def sincronizarTodo():
             "clave_primaria": "cedula",
             "columnas": [
                 "cedula", "nombre", "cargo", "correoPersonal", "correo",
-                "celular", "direccion", "idProyecto", "codigoSubcentroCostos",
+                "celular", "password", "direccion", "idProyecto", "codigoSubcentroCostos",
                 "idSede", "idArea", "estado", "tipoDocumento", "genero",
-                "fechaIngreso", "fechaVencimiento", "password"
+                "fechaIngreso", "fechaVencimiento" 
             ]
         },
         {
