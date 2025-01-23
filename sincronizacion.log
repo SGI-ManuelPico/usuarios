@@ -1,0 +1,21 @@
+2025-01-22 15:58:21,187 - INFO - Inicio del proceso de sincronización...
+2025-01-22 15:58:25,309 - INFO - Sincronización completada con éxito.
+2025-01-22 15:58:25,309 - INFO - Fin del proceso.
+2025-01-22 16:04:58,281 - INFO - Inicio del proceso de sincronización...
+2025-01-22 16:05:02,230 - INFO - Sincronización completada con éxito.
+2025-01-22 16:05:02,230 - INFO - Fin del proceso.
+2025-01-22 16:06:06,138 - INFO - Inicio del proceso de sincronización...
+2025-01-22 16:06:10,142 - INFO - Sincronización completada con éxito.
+2025-01-22 16:06:10,142 - INFO - Fin del proceso.
+2025-01-23 08:43:33,393 - INFO - Inicio del proceso de sincronización...
+2025-01-23 08:43:34,266 - INFO - package: mysql.connector.plugins
+2025-01-23 08:43:34,266 - INFO - plugin_name: mysql_native_password
+2025-01-23 08:43:34,316 - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-01-23 08:43:39,559 - INFO - Sincronización completada con éxito.
+2025-01-23 08:43:39,559 - INFO - Fin del proceso.
+2025-01-23 11:06:39,049 - INFO - Inicio del proceso de sincronización...
+2025-01-23 11:06:39,858 - INFO - package: mysql.connector.plugins
+2025-01-23 11:06:39,858 - INFO - plugin_name: mysql_native_password
+2025-01-23 11:06:39,863 - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-01-23 11:06:46,898 - INFO - Sincronización completada con éxito.
+2025-01-23 11:06:46,898 - INFO - Fin del proceso.

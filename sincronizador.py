@@ -17,41 +17,48 @@ def sincronizar_tabla(conn1, conn2, tabla, clave_primaria, columnas):
     try:
         print(f"Iniciando sincronización de la tabla {tabla}...")
         cursor1 = conn1.cursor(dictionary=True)
-        cursor2 = conn2.cursor()
+        cursor2 = conn2.cursor(dictionary=True)
 
-        # Obtener todos los registros de la tabla en la base de datos origen
+        # 1) Traer todos los registros de la tabla origen
         cursor1.execute(f"SELECT {', '.join(columnas)} FROM {tabla}")
         registros_origen = cursor1.fetchall()
 
         if not registros_origen:
-            print(f"No se encontraron registros en la tabla {tabla}.")
+            print(f"No se encontraron registros en la tabla {tabla} en la BD origen.")
             return
 
+        # 2) Obtener todas las claves primarias existentes en la BD destino de una sola vez
+        cursor2.execute(f"SELECT {clave_primaria} FROM {tabla}")
+        claves_destino = cursor2.fetchall()
+
+        claves_existentes = {fila[clave_primaria] for fila in claves_destino}
+
+        # 3) Preparar los registros que se deben insertar porque NO existen en destino
+        registros_a_insertar = []
         for registro in registros_origen:
-            try:
-                # Verificar si el registro ya existe en la tabla destino
-                cursor2.execute(
-                    f"SELECT {clave_primaria} FROM {tabla} WHERE {clave_primaria} = %s", 
-                    (registro[clave_primaria],)
-                )
-                registro_destino = cursor2.fetchone()
+            if registro[clave_primaria] not in claves_existentes:
+                valores = [registro[col] for col in columnas]
+                registros_a_insertar.append(valores)
 
-                if not registro_destino:
-                    # Insertar el registro si no existe
-                    print(f"Insertando registro con {clave_primaria} = {registro[clave_primaria]}...")
-                    columnas_insert = ", ".join(columnas)
-                    valores_insert = ", ".join(["%s"] * len(columnas))
-                    valores = [registro[col] for col in columnas]
-                    cursor2.execute(
-                        f"INSERT INTO {tabla} ({columnas_insert}) VALUES ({valores_insert})",
-                        valores
-                    )
-                    conn2.commit()  # Confirmar los cambios después de cada inserción
+        if not registros_a_insertar:
+            print(f"Todos los registros de {tabla} ya existen en destino. Nada que insertar.")
+            return
 
-            except Exception as e:
-                print(f"Error al procesar el registro con {clave_primaria} = {registro[clave_primaria]}: {e}")
+        # 4) Insertar en lotes usando executemany
+        columnas_insert = ", ".join(columnas)
+        valores_insert = ", ".join(["%s"] * len(columnas))
 
-        print(f"Sincronización de la tabla {tabla} completada.")
+        query_insert = f"""
+            INSERT INTO {tabla} ({columnas_insert}) 
+            VALUES ({valores_insert})
+        """
+
+        cursor2.executemany(query_insert, registros_a_insertar)
+
+        # 5) Hacer commit solo una vez luego de la inserción
+        conn2.commit()
+
+        print(f"Insertados {cursor2.rowcount} registros nuevos en la tabla {tabla}.")
 
     except Exception as e:
         print(f"Error general al sincronizar la tabla {tabla}: {e}")
@@ -62,41 +69,12 @@ def sincronizar_tabla(conn1, conn2, tabla, clave_primaria, columnas):
             cursor2.close()
 
 
-def sincronizarTablaConexion(config, db_config):
-    """
-    Sincroniza una tabla con su propia conexión.
-
-    Args:
-        config: Diccionario con la configuración de la tabla (nombre, clave primaria, columnas).
-        db_config: Configuración para conectarse a la base de datos.
-    """
-    db_origen = ConexionDB(**db_config['origen'])
-    db_destino = ConexionDB(**db_config['destino'])
-
-    conn1 = db_origen.establecerConexion()
-    conn2 = db_destino.establecerConexion()
-
-    if conn1 and conn2:
-        try:
-            sincronizar_tabla(
-                conn1, conn2,
-                tabla=config["tabla"],
-                clave_primaria=config["clave_primaria"],
-                columnas=config["columnas"]
-            )
-        except Exception as e:
-            print(f"Error al sincronizar la tabla {config['tabla']}: {e}")
-        finally:
-            db_origen.cerrarConexion()
-            db_destino.cerrarConexion()
-    else:
-        print(f"Error al conectar para la tabla {config['tabla']}.")
-
-
 def sincronizarTodo():
     """
-    Sincroniza todas las tablas usando conexiones separadas para cada una.
+    Sincroniza todas las tablas necesarias usando una sola conexión
+    a la BD de origen y otra a la BD de destino.
     """
+    # Define las tablas a sincronizar y sus columnas
     tablas = [
         {
             "tabla": "usuario",
@@ -117,6 +95,7 @@ def sincronizarTodo():
         }
     ]
 
+    # Configuración de conexiones de origen y destino
     db_config = {
         "destino": {
             "host": "srv1182.hstgr.io",
@@ -132,5 +111,34 @@ def sincronizarTodo():
         }
     }
 
-    for config in tablas:
-        sincronizarTablaConexion(config, db_config)
+    # Abrir las conexiones sólo una vez
+    db_origen = ConexionDB(**db_config['origen'])
+    db_destino = ConexionDB(**db_config['destino'])
+
+    conn1 = db_origen.establecerConexion()
+    conn2 = db_destino.establecerConexion()
+
+    # Verificar que se pudo conectar a ambas bases de datos
+    if not conn1 or not conn2:
+        print("Error al conectar con la base de datos de origen o destino.")
+        return
+
+    try:
+        # Recorrer cada tabla y sincronizar
+        for config in tablas:
+            try:
+                sincronizar_tabla(
+                    conn1,
+                    conn2,
+                    tabla=config["tabla"],
+                    clave_primaria=config["clave_primaria"],
+                    columnas=config["columnas"]
+                )
+            except Exception as e:
+                print(f"Error al sincronizar la tabla {config['tabla']}: {e}")
+
+    finally:
+        # Cerrar las conexiones al terminar
+        db_origen.cerrarConexion()
+        db_destino.cerrarConexion()
+        print("Proceso de sincronización finalizado.")
