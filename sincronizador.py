@@ -31,7 +31,6 @@ def sincronizar_tabla(conn1, conn2, tabla, clave_primaria, columnas):
         cursor2.execute(f"SELECT {clave_primaria} FROM {tabla}")
         claves_destino = cursor2.fetchall()
 
-        # Convertir a un set para búsqueda rápida en O(1)
         claves_existentes = {fila[clave_primaria] for fila in claves_destino}
 
         # 3) Preparar los registros que se deben insertar porque NO existen en destino
